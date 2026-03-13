@@ -1,26 +1,37 @@
-import { fromHono } from "chanfana";
-import { Hono } from "hono";
-import { TaskCreate } from "./endpoints/taskCreate";
-import { TaskDelete } from "./endpoints/taskDelete";
-import { TaskFetch } from "./endpoints/taskFetch";
-import { TaskList } from "./endpoints/taskList";
+import { importShareLink } from "./endpoints/importShareLink";
+import { buildCorsHeaders, json } from "./lib/json";
+import type { Env } from "./env";
 
-// Start a Hono app
-const app = new Hono<{ Bindings: Env }>();
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const origin = request.headers.get("origin") ?? "*";
 
-// Setup OpenAPI registry
-const openapi = fromHono(app, {
-	docs_url: "/",
-});
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: buildCorsHeaders(origin),
+      });
+    }
 
-// Register OpenAPI endpoints
-openapi.get("/api/tasks", TaskList);
-openapi.post("/api/tasks", TaskCreate);
-openapi.get("/api/tasks/:taskSlug", TaskFetch);
-openapi.delete("/api/tasks/:taskSlug", TaskDelete);
+    if (request.method === "GET" && url.pathname === "/health") {
+      return json(
+        {
+          ok: true,
+          service: "cachet-api",
+        },
+        200,
+        origin,
+      );
+    }
 
-// You may also register routes for non OpenAPI directly on Hono
-// app.get('/test', (c) => c.text('Hono!'))
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/imports/share-link"
+    ) {
+      return importShareLink(request, env, origin);
+    }
 
-// Export the Hono app
-export default app;
+    return json({ error: "Not found." }, 404, origin);
+  },
+};
