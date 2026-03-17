@@ -1,7 +1,12 @@
 import { json } from "../lib/json";
 import { detectSportsbook } from "../lib/sportsbook";
 import { ImportShareLinkRequestSchema } from "../types/bets";
-import { createBetImport } from "../db/imports";
+import {
+  createBetImport,
+  updateBetImportAfterParse,
+} from "../db/imports";
+import { fetchHtml } from "../lib/fetchHtml";
+import { parseSharePage } from "../parsers";
 import type { Env } from "../env";
 
 export async function importShareLink(
@@ -38,28 +43,35 @@ export async function importShareLink(
       sportsbookSlug: sportsbook,
     });
 
+    const html = await fetchHtml(parsed.data.url);
+    const parserResult = parseSharePage(sportsbook, html);
+
+    await updateBetImportAfterParse(env, {
+      importId: createdImport.id,
+      rawHtml: html,
+      rawPayload: parserResult.rawPayload,
+      parseStatus: parserResult.parseStatus,
+      errorMessage: parserResult.errorMessage,
+      parserVersion: "v1_stub",
+    });
+
     return json(
       {
         importId: createdImport.id,
         sportsbook,
-        status: createdImport.parseStatus,
-        parsedBet: {
-          sportsbook,
-          betType: "unknown",
-          legs: [],
-        },
-        message: "Import accepted and persisted.",
+        status: parserResult.parseStatus,
+        parsedBet: parserResult.parsedBet,
+        message:
+          parserResult.parseStatus === "parsed"
+            ? "Import fetched and parsed."
+            : parserResult.errorMessage ?? "Import saved but parsing failed.",
       },
       200,
       origin,
     );
   } catch (error) {
-    console.error("Failed to create bet import", error);
+    console.error("Failed to import share link", error);
 
-    return json(
-      { error: "Failed to persist import." },
-      500,
-      origin,
-    );
+    return json({ error: "Failed to import share link." }, 500, origin);
   }
 }

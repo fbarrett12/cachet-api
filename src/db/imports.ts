@@ -64,3 +64,44 @@ export async function createBetImport(
     await client.end();
   }
 }
+
+export async function updateBetImportAfterParse(
+  env: Env,
+  input: {
+    importId: string;
+    rawHtml: string;
+    rawPayload?: unknown;
+    parseStatus: "pending" | "parsed" | "failed";
+    errorMessage?: string;
+    parserVersion: string;
+  },
+): Promise<void> {
+  const client = createDbClient(env);
+
+  await client.connect();
+
+  try {
+    await client.query(
+      `
+        update bet_imports
+        set
+          raw_html = $2,
+          raw_payload = $3,
+          parse_status = $4,
+          error_message = $5,
+          parser_version = $6
+        where id = $1
+      `,
+      [
+        input.importId,
+        input.rawHtml,
+        input.rawPayload ? JSON.stringify(input.rawPayload) : null,
+        input.parseStatus,
+        input.errorMessage ?? null,
+        input.parserVersion,
+      ],
+    );
+  } finally {
+    await client.end();
+  }
+}
