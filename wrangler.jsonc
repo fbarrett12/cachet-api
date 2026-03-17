@@ -17,7 +17,7 @@
 		{
 			"binding": "HYPERDRIVE",
 			"id": "63d51566cea44b79a640e7de7c58c173",
-			"localConnectionString": "postgresql://neondb_owner:npg_QP1RBpLZwOI4@ep-gentle-field-ad5aocct.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+			"localConnectionString": "postgresql://hyperdrive_user:npg_4PkaGDoUI9RE@ep-gentle-field-ad5aocct.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 		}
 	]
 	/**
