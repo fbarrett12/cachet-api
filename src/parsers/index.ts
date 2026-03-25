@@ -1,17 +1,17 @@
-import { parseDraftKingsSharePage } from "./draftkings";
-import { parseFanDuelSharePage } from "./fanduel";
 import type { Sportsbook } from "../types/bets";
 import type { ParserResult } from "../types/parsers";
+import { parseDraftKingsSharePageFromUrl } from "./draftkings";
+import { parseFanDuelSharePage } from "./fanduel";
 
-export function parseSharePage(
+export async function parseSharePage(
   sportsbook: Sportsbook,
-  html: string,
-): ParserResult {
+  input: { html: string; shareUrl: string },
+): Promise<ParserResult> {
   switch (sportsbook) {
     case "draftkings":
-      return parseDraftKingsSharePage(html);
+      return parseDraftKingsSharePageFromUrl(input.shareUrl);
     case "fanduel":
-      return parseFanDuelSharePage(html);
+      return parseFanDuelSharePage(input.html);
     default:
       return {
         parsedBet: null,

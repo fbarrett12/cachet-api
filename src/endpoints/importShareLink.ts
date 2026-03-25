@@ -44,7 +44,11 @@ export async function importShareLink(
     });
 
     const html = await fetchHtml(parsed.data.url);
-    const parserResult = parseSharePage(sportsbook, html);
+
+    const parserResult = await parseSharePage(sportsbook, {
+      html,
+      shareUrl: parsed.data.url,
+    });
 
     await updateBetImportAfterParse(env, {
       importId: createdImport.id,
@@ -52,7 +56,7 @@ export async function importShareLink(
       rawPayload: parserResult.rawPayload,
       parseStatus: parserResult.parseStatus,
       errorMessage: parserResult.errorMessage,
-      parserVersion: "v1_stub",
+      parserVersion: "draftkings_social_v1", // This should ideally be dynamic based on which parser was used
     });
 
     return json(

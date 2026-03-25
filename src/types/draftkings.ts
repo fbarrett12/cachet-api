@@ -1,0 +1,42 @@
+export type DraftKingsBetJson = {
+  betId: string;
+  placedDate?: string;
+  settlementDate?: string;
+  status?: string;
+  payout?: number;
+  potentialPayout?: number;
+  stake?: number;
+  type?: string;
+  sourceDeviceType?: string;
+  rewards?: unknown[];
+  events?: Array<{
+    eventId?: string;
+    providerEventId?: string;
+    name?: string;
+    leagueName?: string;
+    sportName?: string;
+    startDate?: string;
+    teamName1?: string;
+    teamName2?: string;
+    displayGroupName?: string;
+  }>;
+  combinationOutcomes?: Array<{
+    eventId?: string;
+    providerEventId?: string;
+    providerSelectionId?: string;
+    status?: string;
+    offerLabel?: string;
+    outcomeLabel?: string;
+    awayTeamName?: string;
+    homeTeamName?: string;
+    isTeamSwap?: boolean;
+    enterpriseDisplayOdds?: string;
+    playedOddsAmerican?: string;
+    playedOddsDecimal?: number;
+    playedOddsFractional?: string;
+    currentOddsAmerican?: string;
+    currentOddsDecimal?: number;
+    currentOddsFractional?: string;
+    isEarlyExitApplied?: boolean;
+  }>;
+};
