@@ -17,6 +17,19 @@ function mapDraftKingsBetType(value: string | undefined) {
   return "unknown";
 }
 
+function parseAmericanOdds(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+
+  const normalized = value
+    .replace(/\u2212/g, "-") // Unicode minus → normal hyphen
+    .replace(/[^\d-]/g, "");
+
+  if (!normalized) return undefined;
+
+  const parsed = Number(normalized);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 export async function parseDraftKingsSharePageFromUrl(
   shareUrl: string,
 ): Promise<ParserResult> {
@@ -76,9 +89,7 @@ export async function parseDraftKingsSharePageFromUrl(
       selectionType: outcome.outcomeLabel,
       playerName: undefined,
       lineValue: undefined,
-      oddsAmerican: outcome.playedOddsAmerican
-        ? Number(outcome.playedOddsAmerican.replace(/[^\d-]/g, ""))
-        : undefined,
+      oddsAmerican: parseAmericanOdds(outcome.playedOddsAmerican),
       startsAt: undefined,
     })) ?? [];
 

@@ -38,16 +38,26 @@ export async function importShareLink(
   const sportsbook = detectSportsbook(parsed.data.url);
 
   try {
+    console.log("Creating bet import", { url: parsed.data.url, sportsbook });
+
     const createdImport = await createBetImport(env, {
       sourceUrl: parsed.data.url,
       sportsbookSlug: sportsbook,
     });
 
+    console.log("Bet import created", { importId: createdImport.id });
+
     const html = await fetchHtml(parsed.data.url);
+    console.log("Fetched share HTML", { length: html.length });
 
     const parserResult = await parseSharePage(sportsbook, {
       html,
       shareUrl: parsed.data.url,
+    });
+
+    console.log("Parser result received", {
+      parseStatus: parserResult.parseStatus,
+      hasParsedBet: !!parserResult.parsedBet,
     });
 
     await updateBetImportAfterParse(env, {
@@ -56,7 +66,7 @@ export async function importShareLink(
       rawPayload: parserResult.rawPayload,
       parseStatus: parserResult.parseStatus,
       errorMessage: parserResult.errorMessage,
-      parserVersion: "draftkings_social_v1", // This should ideally be dynamic based on which parser was used
+      parserVersion: "draftkings_social_v1",
     });
 
     return json(
@@ -76,6 +86,13 @@ export async function importShareLink(
   } catch (error) {
     console.error("Failed to import share link", error);
 
-    return json({ error: "Failed to import share link." }, 500, origin);
+    return json(
+      {
+        error: "Failed to import share link.",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      500,
+      origin,
+    );
   }
 }

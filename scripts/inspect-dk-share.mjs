@@ -9,45 +9,46 @@ const page = await browser.newPage({
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 });
 
-page.on("request", (request) => {
+page.on("request", async (request) => {
   const url = request.url();
-  if (
-    /social|post|betslip|offer|outcome|eventgroup|selection|graphql|api/i.test(
-      url,
-    )
-  ) {
-    console.log("\n[REQUEST]", request.method(), url);
+
+  if (!url.includes("api.draftkings.com/comments/feed/post/details.json")) {
+    return;
+  }
+
+  console.log("\n=== MATCHED REQUEST ===");
+  console.log("METHOD:", request.method());
+  console.log("URL:", url);
+  console.log("HEADERS:", JSON.stringify(request.headers(), null, 2));
+
+  const postData = request.postData();
+  if (postData) {
+    console.log("POST DATA:", postData);
+  } else {
+    console.log("POST DATA: <none>");
   }
 });
 
 page.on("response", async (response) => {
   const url = response.url();
 
-  if (
-    /social|post|betslip|offer|outcome|eventgroup|selection|graphql|api/i.test(
-      url,
-    )
-  ) {
-    console.log("\n[RESPONSE]", response.status(), url);
+  if (!url.includes("api.draftkings.com/comments/feed/post/details.json")) {
+    return;
+  }
 
-    const contentType = response.headers()["content-type"] || "";
-    if (contentType.includes("application/json")) {
-      try {
-        const json = await response.json();
-        console.log(
-          JSON.stringify(json, null, 2).slice(0, 4000)
-        );
-      } catch {
-        console.log("[json parse failed]");
-      }
-    }
+  console.log("\n=== MATCHED RESPONSE ===");
+  console.log("STATUS:", response.status());
+  console.log("URL:", url);
+
+  try {
+    const text = await response.text();
+    console.log("BODY PREVIEW:");
+    console.log(text.slice(0, 4000));
+  } catch {
+    console.log("BODY PREVIEW: <unavailable>");
   }
 });
 
 await page.goto(shareUrl, { waitUntil: "networkidle", timeout: 60000 });
-
-console.log("\nFinal URL:", page.url());
-console.log("Page title:", await page.title());
-
 await page.waitForTimeout(5000);
 await browser.close();
