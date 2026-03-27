@@ -5,6 +5,7 @@ import {
   createBetImport,
   updateBetImportAfterParse,
 } from "../db/imports";
+import { createBetWithLegs } from "../db/bets";
 import { fetchHtml } from "../lib/fetchHtml";
 import { parseSharePage } from "../parsers";
 import type { Env } from "../env";
@@ -69,15 +70,29 @@ export async function importShareLink(
       parserVersion: "draftkings_social_v1",
     });
 
+    let betId: string | undefined;
+
+    if (parserResult.parseStatus === "parsed" && parserResult.parsedBet) {
+      const persistedBet = await createBetWithLegs(env, {
+        userId: null,
+        sportsbookSlug: sportsbook,
+        betImportId: createdImport.id,
+        parsedBet: parserResult.parsedBet,
+      });
+
+      betId = persistedBet.betId;
+    }
+
     return json(
       {
         importId: createdImport.id,
+        betId,
         sportsbook,
         status: parserResult.parseStatus,
         parsedBet: parserResult.parsedBet,
         message:
           parserResult.parseStatus === "parsed"
-            ? "Import fetched and parsed."
+            ? "Import fetched, parsed, and persisted."
             : parserResult.errorMessage ?? "Import saved but parsing failed.",
       },
       200,

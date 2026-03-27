@@ -29,6 +29,13 @@ export type ParsedBetLeg = z.infer<typeof ParsedBetLegSchema>;
 export const ParsedBetSchema = z.object({
   sportsbook: SportsbookSchema,
   betType: BetTypeSchema,
+  externalBetId: z.string().optional(),
+  status: z.string().optional(),
+  placedAt: z.string().optional(),
+  settledAt: z.string().optional(),
+  stake: z.number().optional(),
+  payout: z.number().optional(),
+  potentialPayout: z.number().optional(),
   oddsAmerican: z.number().optional(),
   legs: z.array(ParsedBetLegSchema),
 });
@@ -43,6 +50,7 @@ export type ImportShareLinkRequest = z.infer<
 
 export const ImportShareLinkResponseSchema = z.object({
   importId: z.string(),
+  betId: z.string().optional(),
   sportsbook: SportsbookSchema,
   status: z.enum(["pending", "parsed", "failed"]),
   parsedBet: ParsedBetSchema.nullable(),

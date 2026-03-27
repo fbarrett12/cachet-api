@@ -21,7 +21,7 @@ function parseAmericanOdds(value: string | undefined): number | undefined {
   if (!value) return undefined;
 
   const normalized = value
-    .replace(/\u2212/g, "-") // Unicode minus → normal hyphen
+    .replace(/\u2212/g, "-")
     .replace(/[^\d-]/g, "");
 
   if (!normalized) return undefined;
@@ -97,6 +97,13 @@ export async function parseDraftKingsSharePageFromUrl(
     parsedBet: {
       sportsbook: "draftkings",
       betType: mapDraftKingsBetType(betJson.type),
+      externalBetId: betJson.betId,
+      status: betJson.status,
+      placedAt: betJson.placedDate,
+      settledAt: betJson.settlementDate,
+      stake: betJson.stake,
+      payout: betJson.payout,
+      potentialPayout: betJson.potentialPayout,
       legs,
     },
     parseStatus: "parsed",
