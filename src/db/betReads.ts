@@ -154,3 +154,113 @@ export async function getBetById(env: Env, betId: string) {
     await client.end();
   }
 }
+
+export async function listBets(
+  env: Env,
+  options?: { limit?: number },
+) {
+  const client = createDbClient(env);
+  await client.connect();
+
+  try {
+    const limit = Math.min(Math.max(options?.limit ?? 25, 1), 100);
+
+    const result = await client.query<
+      BetRow & {
+        leg_count: string;
+        legs_preview: unknown;
+      }
+    >(
+      `
+        select
+          b.id,
+          b.user_id,
+          s.slug as sportsbook_slug,
+          b.bet_import_id,
+          b.external_share_id,
+          b.bet_type,
+          b.status,
+          b.placed_at,
+          b.event_start_at,
+          b.stake_cents,
+          b.to_win_cents,
+          b.payout_cents,
+          b.odds_american,
+          b.odds_decimal,
+          b.is_user_confirmed,
+          b.placed_confirmed_at,
+          b.graded_at,
+          b.created_at,
+          b.updated_at,
+          count(bl.id)::text as leg_count,
+          coalesce(
+            json_agg(
+              json_build_object(
+                'id', bl.id,
+                'eventName', bl.event_name,
+                'marketType', bl.market_type,
+                'marketSubtype', bl.market_subtype,
+                'selectionType', bl.selection_type,
+                'playerName', bl.player_name,
+                'oddsAmerican', bl.odds_american
+              )
+              order by bl.created_at asc
+            ) filter (where bl.id is not null),
+            '[]'::json
+          ) as legs_preview
+        from bets b
+        left join sportsbooks s on s.id = b.sportsbook_id
+        left join bet_legs bl on bl.bet_id = b.id
+        group by
+          b.id,
+          b.user_id,
+          s.slug,
+          b.bet_import_id,
+          b.external_share_id,
+          b.bet_type,
+          b.status,
+          b.placed_at,
+          b.event_start_at,
+          b.stake_cents,
+          b.to_win_cents,
+          b.payout_cents,
+          b.odds_american,
+          b.odds_decimal,
+          b.is_user_confirmed,
+          b.placed_confirmed_at,
+          b.graded_at,
+          b.created_at,
+          b.updated_at
+        order by coalesce(b.placed_at, b.created_at) desc
+        limit $1
+      `,
+      [limit],
+    );
+
+    return result.rows.map((bet) => ({
+      id: bet.id,
+      userId: bet.user_id,
+      sportsbook: bet.sportsbook_slug,
+      betImportId: bet.bet_import_id,
+      externalBetId: bet.external_share_id,
+      betType: bet.bet_type,
+      status: bet.status,
+      placedAt: bet.placed_at,
+      eventStartAt: bet.event_start_at,
+      stake: centsToDollars(bet.stake_cents),
+      toWin: centsToDollars(bet.to_win_cents),
+      payout: centsToDollars(bet.payout_cents),
+      oddsAmerican: bet.odds_american,
+      oddsDecimal: bet.odds_decimal ? Number(bet.odds_decimal) : null,
+      isUserConfirmed: bet.is_user_confirmed,
+      placedConfirmedAt: bet.placed_confirmed_at,
+      gradedAt: bet.graded_at,
+      createdAt: bet.created_at,
+      updatedAt: bet.updated_at,
+      legCount: Number(bet.leg_count),
+      legsPreview: Array.isArray(bet.legs_preview) ? bet.legs_preview : [],
+    }));
+  } finally {
+    await client.end();
+  }
+}
