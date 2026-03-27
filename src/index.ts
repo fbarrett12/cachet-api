@@ -1,4 +1,5 @@
 import { importShareLink } from "./endpoints/importShareLink";
+import { getBetByIdEndpoint } from "./endpoints/getBetById";
 import { buildCorsHeaders, json } from "./lib/json";
 import type { Env } from "./env";
 
@@ -30,6 +31,10 @@ export default {
       url.pathname === "/api/imports/share-link"
     ) {
       return importShareLink(request, env, origin);
+    }
+
+    if (request.method === "GET" && /^\/api\/bets\/[^/]+$/.test(url.pathname)) {
+      return getBetByIdEndpoint(request, env, origin);
     }
 
     return json({ error: "Not found." }, 404, origin);
