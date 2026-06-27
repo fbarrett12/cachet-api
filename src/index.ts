@@ -2,6 +2,9 @@ import { importShareLink } from "./endpoints/importShareLink";
 import { getBetByIdEndpoint } from "./endpoints/getBetById";
 import { listBetsEndpoint } from "./endpoints/listBets";
 import { buildCorsHeaders, json } from "./lib/json";
+import { registerEndpoint } from "./endpoints/register";
+import { loginEndpoint } from "./endpoints/login";
+import { meEndpoint } from "./endpoints/me";
 import type { Env } from "./env";
 
 export default {
@@ -25,6 +28,18 @@ export default {
         200,
         origin,
       );
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/auth/register") {
+      return registerEndpoint(request, env, origin);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/auth/login") {
+      return loginEndpoint(request, env, origin);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/auth/me") {
+      return meEndpoint(request, env, origin);
     }
 
     if (

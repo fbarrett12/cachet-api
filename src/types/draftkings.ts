@@ -1,3 +1,23 @@
+export type DraftKingsOutcome = {
+  combinationOutcomeId?: number;
+  eventId?: string;
+  providerEventId?: string;
+  providerSelectionId?: string;
+  status?: string;
+  offerLabel?: string;
+  outcomeLabel?: string;
+  awayTeamName?: string;
+  homeTeamName?: string;
+  isTeamSwap?: boolean;
+  enterpriseDisplayOdds?: string;
+  playedOddsAmerican?: string;
+  playedOddsDecimal?: number;
+  currentOddsAmerican?: string;
+  currentOddsDecimal?: number;
+  isEarlyExitApplied?: boolean;
+  nestedSGPSelections?: DraftKingsOutcome[];
+};
+
 export type DraftKingsBetJson = {
   betId: string;
   placedDate?: string;
@@ -20,23 +40,5 @@ export type DraftKingsBetJson = {
     teamName2?: string;
     displayGroupName?: string;
   }>;
-  combinationOutcomes?: Array<{
-    eventId?: string;
-    providerEventId?: string;
-    providerSelectionId?: string;
-    status?: string;
-    offerLabel?: string;
-    outcomeLabel?: string;
-    awayTeamName?: string;
-    homeTeamName?: string;
-    isTeamSwap?: boolean;
-    enterpriseDisplayOdds?: string;
-    playedOddsAmerican?: string;
-    playedOddsDecimal?: number;
-    playedOddsFractional?: string;
-    currentOddsAmerican?: string;
-    currentOddsDecimal?: number;
-    currentOddsFractional?: string;
-    isEarlyExitApplied?: boolean;
-  }>;
+  combinationOutcomes?: DraftKingsOutcome[];
 };

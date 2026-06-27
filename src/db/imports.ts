@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { createDbClient } from "./client";
 
 type CreateBetImportInput = {
+  userId: string;
   sourceUrl: string;
   sportsbookSlug: "draftkings" | "fanduel" | "unknown";
 };
@@ -19,39 +20,48 @@ export async function createBetImport(
   await client.connect();
 
   try {
+    const sql = `
+      insert into bet_imports (
+        user_id,
+        sportsbook_id,
+        source_type,
+        source_url,
+        parse_status
+      )
+      values (
+        $1,
+        (
+          select id
+          from sportsbooks
+          where slug = $2
+        ),
+        $3,
+        $4,
+        $5
+      )
+      returning
+        id,
+        (
+          select slug
+          from sportsbooks
+          where id = bet_imports.sportsbook_id
+        ) as sportsbook_slug,
+        parse_status
+    `;
+
+    const values = [
+      input.userId,
+      input.sportsbookSlug,
+      "share_link",
+      input.sourceUrl,
+      "pending",
+    ];
+
     const result = await client.query<{
       id: string;
       sportsbook_slug: string | null;
       parse_status: string;
-    }>(
-      `
-        insert into bet_imports (
-          sportsbook_id,
-          source_type,
-          source_url,
-          parse_status
-        )
-        values (
-          (
-            select id
-            from sportsbooks
-            where slug = $1
-          ),
-          $2,
-          $3,
-          $4
-        )
-        returning
-          id,
-          (
-            select slug
-            from sportsbooks
-            where id = bet_imports.sportsbook_id
-          ) as sportsbook_slug,
-          parse_status
-      `,
-      [input.sportsbookSlug, "share_link", input.sourceUrl, "pending"],
-    );
+    }>(sql, values);
 
     const row = result.rows[0];
 
@@ -81,26 +91,29 @@ export async function updateBetImportAfterParse(
   await client.connect();
 
   try {
-    await client.query(
-      `
-        update bet_imports
-        set
-          raw_html = $2,
-          raw_payload = $3,
-          parse_status = $4,
-          error_message = $5,
-          parser_version = $6
-        where id = $1
-      `,
-      [
-        input.importId,
-        input.rawHtml,
-        input.rawPayload ? JSON.stringify(input.rawPayload) : null,
-        input.parseStatus,
-        input.errorMessage ?? null,
-        input.parserVersion,
-      ],
-    );
+    const sql = `
+      update bet_imports
+      set
+        raw_html = $2,
+        raw_payload = $3,
+        parse_status = $4,
+        error_message = $5,
+        parser_version = $6
+      where id = $1
+    `;
+
+    const values = [
+      input.importId,
+      input.rawHtml,
+      input.rawPayload
+        ? JSON.stringify(input.rawPayload)
+        : null,
+      input.parseStatus,
+      input.errorMessage ?? null,
+      input.parserVersion,
+    ];
+
+    await client.query(sql, values);
   } finally {
     await client.end();
   }

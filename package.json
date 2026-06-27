@@ -9,12 +9,15 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"bcryptjs": "^3.0.3",
 		"chanfana": "^2.6.3",
 		"hono": "^4.6.20",
+		"jose": "^6.2.3",
 		"pg": "^8.20.0",
 		"zod": "^3.25.76"
 	},
 	"devDependencies": {
+		"@types/bcryptjs": "^2.4.6",
 		"@types/node": "^22.13.0",
 		"@types/pg": "^8.18.0",
 		"@types/service-worker-mock": "^2.0.4",

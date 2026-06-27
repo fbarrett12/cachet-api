@@ -8,6 +8,7 @@ import {
 import { createBetWithLegs } from "../db/bets";
 import { fetchHtml } from "../lib/fetchHtml";
 import { parseSharePage } from "../parsers";
+import { getCurrentUserFromRequest } from "../auth/requireUser";
 import type { Env } from "../env";
 
 export async function importShareLink(
@@ -36,12 +37,19 @@ export async function importShareLink(
     );
   }
 
+  const authUser = await getCurrentUserFromRequest(request, env);
+
+  if (!authUser) {
+    return json({ error: "Unauthorized." }, 401, origin);
+  }
+
   const sportsbook = detectSportsbook(parsed.data.url);
 
   try {
     console.log("Creating bet import", { url: parsed.data.url, sportsbook });
 
     const createdImport = await createBetImport(env, {
+      userId: authUser.id,
       sourceUrl: parsed.data.url,
       sportsbookSlug: sportsbook,
     });
@@ -74,7 +82,7 @@ export async function importShareLink(
 
     if (parserResult.parseStatus === "parsed" && parserResult.parsedBet) {
       const persistedBet = await createBetWithLegs(env, {
-        userId: null,
+        userId: authUser.id,
         sportsbookSlug: sportsbook,
         betImportId: createdImport.id,
         parsedBet: parserResult.parsedBet,

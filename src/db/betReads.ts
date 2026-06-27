@@ -47,7 +47,7 @@ function centsToDollars(value: number | null): number | null {
   return value / 100;
 }
 
-export async function getBetById(env: Env, betId: string) {
+export async function getBetById(env: Env, betId: string, userId: string) {
   const client = createDbClient(env);
   await client.connect();
 
@@ -77,9 +77,10 @@ export async function getBetById(env: Env, betId: string) {
         from bets b
         left join sportsbooks s on s.id = b.sportsbook_id
         where b.id = $1
+        and b.user_id = $2
         limit 1
       `,
-      [betId],
+      [betId, userId],
     );
 
     const bet = betResult.rows[0];
@@ -157,7 +158,7 @@ export async function getBetById(env: Env, betId: string) {
 
 export async function listBets(
   env: Env,
-  options?: { limit?: number },
+  options: { userId: string; limit?: number },
 ) {
   const client = createDbClient(env);
   await client.connect();
@@ -211,6 +212,7 @@ export async function listBets(
         from bets b
         left join sportsbooks s on s.id = b.sportsbook_id
         left join bet_legs bl on bl.bet_id = b.id
+        where b.user_id = $2
         group by
           b.id,
           b.user_id,
@@ -234,7 +236,7 @@ export async function listBets(
         order by coalesce(b.placed_at, b.created_at) desc
         limit $1
       `,
-      [limit],
+      [limit, options.userId],
     );
 
     return result.rows.map((bet) => ({

@@ -73,50 +73,100 @@ export async function createBetWithLegs(
 
     const betId = betInsertResult.rows[0].id;
 
-    for (const leg of input.parsedBet.legs) {
-      await client.query(
+    const groups =
+      input.parsedBet.groups?.length
+        ? input.parsedBet.groups
+        : [
+            {
+              groupType: "standalone" as const,
+              label: "Ungrouped",
+              eventName: undefined,
+              legOrder: 0,
+              legs: input.parsedBet.legs,
+            },
+          ];
+
+    for (const [groupIndex, group] of groups.entries()) {
+      const groupInsertResult = await client.query<{ id: string }>(
         `
-          insert into bet_legs (
+          insert into bet_leg_groups (
             bet_id,
-            sport,
-            league,
+            group_type,
+            label,
             event_name,
-            market_type,
-            market_subtype,
-            selection_type,
-            player_name,
-            line_value,
-            odds_american,
-            starts_at
+            leg_order
           )
-          values (
-            $1,
-            $2,
-            $3,
-            $4,
-            $5,
-            $6,
-            $7,
-            $8,
-            $9,
-            $10,
-            $11
-          )
+          values ($1, $2, $3, $4, $5)
+          returning id
         `,
         [
           betId,
-          leg.sport ?? null,
-          leg.league ?? null,
-          leg.eventName ?? null,
-          leg.marketType ?? null,
-          leg.marketSubtype ?? null,
-          leg.selectionType ?? null,
-          leg.playerName ?? null,
-          leg.lineValue ?? null,
-          leg.oddsAmerican ?? null,
-          leg.startsAt ?? null,
+          group.groupType,
+          group.label ?? null,
+          group.eventName ?? null,
+          group.legOrder ?? groupIndex,
         ],
       );
+
+      const groupId = groupInsertResult.rows[0].id;
+
+      for (const [legIndex, leg] of group.legs.entries()) {
+        await client.query(
+          `
+            insert into bet_legs (
+              bet_id,
+              bet_leg_group_id,
+              sport,
+              league,
+              event_name,
+              market_type,
+              market_subtype,
+              selection_type,
+              player_name,
+              line_value,
+              odds_american,
+              result,
+              starts_at,
+              parent_external_id,
+              leg_order
+            )
+            values (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7,
+              $8,
+              $9,
+              $10,
+              $11,
+              $12,
+              $13,
+              $14,
+              $15
+            )
+          `,
+          [
+            betId,
+            groupId,
+            leg.sport ?? null,
+            leg.league ?? null,
+            leg.eventName ?? null,
+            leg.marketType ?? null,
+            leg.marketSubtype ?? null,
+            leg.selectionType ?? null,
+            leg.playerName ?? null,
+            leg.lineValue ?? null,
+            leg.oddsAmerican ?? null,
+            leg.result ?? "pending",
+            leg.startsAt ?? null,
+            leg.parentExternalId ?? null,
+            leg.legOrder ?? legIndex,
+          ],
+        );
+      }
     }
 
     await client.query("commit");
@@ -128,4 +178,4 @@ export async function createBetWithLegs(
   } finally {
     await client.end();
   }
-}
+} 

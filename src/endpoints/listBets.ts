@@ -1,5 +1,6 @@
 import { listBets } from "../db/betReads";
 import { json } from "../lib/json";
+import { getCurrentUserFromRequest } from "../auth/requireUser";
 import type { Env } from "../env";
 
 export async function listBetsEndpoint(
@@ -22,8 +23,14 @@ export async function listBetsEndpoint(
     limit = parsed;
   }
 
+  const authUser = await getCurrentUserFromRequest(request, env);
+
+  if (!authUser) {
+    return json({ error: "Unauthorized." }, 401, origin);
+  }
+
   try {
-    const bets = await listBets(env, { limit });
+    const bets = await listBets(env, { userId: authUser.id, limit });
 
     return json(
       {

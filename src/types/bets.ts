@@ -8,6 +8,7 @@ export const BetTypeSchema = z.enum([
   "parlay",
   "same_game_parlay",
   "round_robin",
+  "sgpx",
   "unknown",
 ]);
 export type BetType = z.infer<typeof BetTypeSchema>;
@@ -23,8 +24,20 @@ export const ParsedBetLegSchema = z.object({
   lineValue: z.number().optional(),
   oddsAmerican: z.number().optional(),
   startsAt: z.string().optional(),
+  result: z.string().optional(),
+  parentExternalId: z.string().optional(),
+  legOrder: z.number().optional(),
 });
 export type ParsedBetLeg = z.infer<typeof ParsedBetLegSchema>;
+
+export const ParsedBetGroupSchema = z.object({
+  groupType: z.enum(["standalone", "same_game_parlay"]),
+  label: z.string().optional(),
+  eventName: z.string().optional(),
+  legOrder: z.number().optional(),
+  legs: z.array(ParsedBetLegSchema),
+});
+export type ParsedBetGroup = z.infer<typeof ParsedBetGroupSchema>;
 
 export const ParsedBetSchema = z.object({
   sportsbook: SportsbookSchema,
@@ -38,6 +51,8 @@ export const ParsedBetSchema = z.object({
   potentialPayout: z.number().optional(),
   oddsAmerican: z.number().optional(),
   legs: z.array(ParsedBetLegSchema),
+  // grouped representation for SGP display
+  groups: z.array(ParsedBetGroupSchema).optional(),
 });
 export type ParsedBet = z.infer<typeof ParsedBetSchema>;
 
