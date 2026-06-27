@@ -1,15 +1,17 @@
-import { json } from "../lib/json";
-import { detectSportsbook } from "../lib/sportsbook";
-import { ImportShareLinkRequestSchema } from "../types/bets";
+import { getCurrentUserFromRequest } from "../auth/requireUser";
+import { createBetWithLegs } from "../db/bets";
 import {
   createBetImport,
   updateBetImportAfterParse,
 } from "../db/imports";
-import { createBetWithLegs } from "../db/bets";
-import { fetchHtml } from "../lib/fetchHtml";
-import { parseSharePage } from "../parsers";
-import { getCurrentUserFromRequest } from "../auth/requireUser";
 import type { Env } from "../env";
+import { fetchHtml } from "../lib/fetchHtml";
+import { json } from "../lib/json";
+import { detectSportsbook } from "../lib/sportsbook";
+import { parseSharePage } from "../parsers";
+import { ImportShareLinkRequestSchema } from "../types/bets";
+
+const PARSER_VERSION = "draftkings_social_v2_nested";
 
 export async function importShareLink(
   request: Request,
@@ -43,30 +45,44 @@ export async function importShareLink(
     return json({ error: "Unauthorized." }, 401, origin);
   }
 
-  const sportsbook = detectSportsbook(parsed.data.url);
+  const shareUrl = parsed.data.url;
+  const userId = authUser.id;
+  const sportsbook = detectSportsbook(shareUrl);
 
   try {
-    console.log("Creating bet import", { url: parsed.data.url, sportsbook });
+    console.log("Creating bet import", {
+      userId,
+      sportsbook,
+      shareUrl,
+    });
 
     const createdImport = await createBetImport(env, {
-      userId: authUser.id,
-      sourceUrl: parsed.data.url,
+      userId,
+      sourceUrl: shareUrl,
       sportsbookSlug: sportsbook,
     });
 
-    console.log("Bet import created", { importId: createdImport.id });
+    console.log("Bet import created", {
+      importId: createdImport.id,
+      userId,
+    });
 
-    const html = await fetchHtml(parsed.data.url);
-    console.log("Fetched share HTML", { length: html.length });
+    const html = await fetchHtml(shareUrl);
+
+    console.log("Fetched share HTML", {
+      importId: createdImport.id,
+      length: html.length,
+    });
 
     const parserResult = await parseSharePage(sportsbook, {
       html,
-      shareUrl: parsed.data.url,
+      shareUrl,
     });
 
     console.log("Parser result received", {
+      importId: createdImport.id,
       parseStatus: parserResult.parseStatus,
-      hasParsedBet: !!parserResult.parsedBet,
+      hasParsedBet: Boolean(parserResult.parsedBet),
     });
 
     await updateBetImportAfterParse(env, {
@@ -75,14 +91,14 @@ export async function importShareLink(
       rawPayload: parserResult.rawPayload,
       parseStatus: parserResult.parseStatus,
       errorMessage: parserResult.errorMessage,
-      parserVersion: "draftkings_social_v1",
+      parserVersion: PARSER_VERSION,
     });
 
     let betId: string | undefined;
 
     if (parserResult.parseStatus === "parsed" && parserResult.parsedBet) {
       const persistedBet = await createBetWithLegs(env, {
-        userId: authUser.id,
+        userId,
         sportsbookSlug: sportsbook,
         betImportId: createdImport.id,
         parsedBet: parserResult.parsedBet,
@@ -91,6 +107,11 @@ export async function importShareLink(
       betId = persistedBet.betId;
     }
 
+    const message =
+      parserResult.parseStatus === "parsed"
+        ? "Import fetched, parsed, and persisted."
+        : parserResult.errorMessage ?? "Import saved but parsing failed.";
+
     return json(
       {
         importId: createdImport.id,
@@ -98,16 +119,18 @@ export async function importShareLink(
         sportsbook,
         status: parserResult.parseStatus,
         parsedBet: parserResult.parsedBet,
-        message:
-          parserResult.parseStatus === "parsed"
-            ? "Import fetched, parsed, and persisted."
-            : parserResult.errorMessage ?? "Import saved but parsing failed.",
+        message,
       },
       200,
       origin,
     );
   } catch (error) {
-    console.error("Failed to import share link", error);
+    console.error("Failed to import share link", {
+      userId,
+      sportsbook,
+      shareUrl,
+      error,
+    });
 
     return json(
       {
