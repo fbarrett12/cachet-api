@@ -47,70 +47,78 @@ function centsToDollars(value: number | null): number | null {
   return value / 100;
 }
 
-export async function getBetById(env: Env, betId: string, userId: string) {
-  const client = createDbClient(env);
-  await client.connect();
+export async function getBetById(
+  env: Env,
+  input: {
+    betId: string;
+    userId: string;
+  },
+) {
+    const client = createDbClient(env);
+    await client.connect();
 
-  try {
-    const betResult = await client.query<BetRow>(
-      `
-        select
-          b.id,
-          b.user_id,
-          s.slug as sportsbook_slug,
-          b.bet_import_id,
-          b.external_share_id,
-          b.bet_type,
-          b.status,
-          b.placed_at,
-          b.event_start_at,
-          b.stake_cents,
-          b.to_win_cents,
-          b.payout_cents,
-          b.odds_american,
-          b.odds_decimal,
-          b.is_user_confirmed,
-          b.placed_confirmed_at,
-          b.graded_at,
-          b.created_at,
-          b.updated_at
-        from bets b
-        left join sportsbooks s on s.id = b.sportsbook_id
-        where b.id = $1
-        and b.user_id = $2
-        limit 1
-      `,
-      [betId, userId],
-    );
+    try {
+      const sql = `
+      select
+        b.id,
+        b.user_id,
+        s.slug as sportsbook_slug,
+        b.bet_import_id,
+        b.external_share_id,
+        b.bet_type,
+        b.status,
+        b.placed_at,
+        b.event_start_at,
+        b.stake_cents,
+        b.to_win_cents,
+        b.payout_cents,
+        b.odds_american,
+        b.odds_decimal,
+        b.is_user_confirmed,
+        b.placed_confirmed_at,
+        b.graded_at,
+        b.created_at,
+        b.updated_at
+      from bets b
+      left join sportsbooks s on s.id = b.sportsbook_id
+      where b.id = $1
+      and b.user_id = $2
+      limit 1
+    `;
+
+    const values = [input.betId, input.userId];
+
+    const betResult = await client.query<BetRow>(sql, values);
 
     const bet = betResult.rows[0];
     if (!bet) return null;
 
-    const legsResult = await client.query<BetLegRow>(
-      `
-        select
-          id,
-          sport,
-          league,
-          event_name,
-          market_type,
-          market_subtype,
-          selection_type,
-          player_name,
-          team_name,
-          opponent_name,
-          line_value,
-          odds_american,
-          result,
-          stat_value,
-          starts_at,
-          created_at
-        from bet_legs
-        where bet_id = $1
-        order by created_at asc
-      `,
-      [betId],
-    );
+    const legsSql = `
+      select
+        id,
+        sport,
+        league,
+        event_name,
+        market_type,
+        market_subtype,
+        selection_type,
+        player_name,
+        team_name,
+        opponent_name,
+        line_value,
+        odds_american,
+        result,
+        stat_value,
+        starts_at,
+        created_at
+      from bet_legs
+      where bet_id = $1
+      order by leg_order asc nulls last, created_at asc
+    `;
+
+    const legsValues = [input.betId];
+
+    const legsResult = await client.query<BetLegRow>(legsSql, legsValues);
 
     return {
       id: bet.id,
@@ -158,21 +166,24 @@ export async function getBetById(env: Env, betId: string, userId: string) {
 
 export async function listBets(
   env: Env,
-  options: { userId: string; limit?: number },
+  input: {
+    userId: string;
+    limit?: number;
+  },
 ) {
-  const client = createDbClient(env);
-  await client.connect();
+    const client = createDbClient(env);
+    await client.connect();
 
-  try {
-    const limit = Math.min(Math.max(options?.limit ?? 25, 1), 100);
+    try {
+      const limit = Math.min(Math.max(input?.limit ?? 25, 1), 100);
 
-    const result = await client.query<
-      BetRow & {
-        leg_count: string;
-        legs_preview: unknown;
-      }
-    >(
-      `
+      const result = await client.query<
+        BetRow & {
+          leg_count: string;
+          legs_preview: unknown;
+        }
+      >(
+        `
         select
           b.id,
           b.user_id,
@@ -236,7 +247,7 @@ export async function listBets(
         order by coalesce(b.placed_at, b.created_at) desc
         limit $1
       `,
-      [limit, options.userId],
+      [limit, input.userId],
     );
 
     return result.rows.map((bet) => ({

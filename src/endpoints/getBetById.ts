@@ -23,7 +23,10 @@ export async function getBetByIdEndpoint(
   }
 
   try {
-    const bet = await getBetById(env, betId, authUser.id);
+    const bet = await getBetById(env, {
+      betId,
+      userId: authUser.id,
+    });
 
     if (!bet) {
       return json({ error: "Bet not found." }, 404, origin);
