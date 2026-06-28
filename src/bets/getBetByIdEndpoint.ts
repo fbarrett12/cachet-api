@@ -1,5 +1,5 @@
 import { json } from "../lib/json";
-import { getBetById } from "../db/betReads";
+import { getBetById } from "./repository";
 import type { AuthUser } from "../auth/jwt";
 import type { Env } from "../env";
 

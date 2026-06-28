@@ -1,4 +1,4 @@
-import { listBets } from "../db/betReads";
+import { listBets } from "./repository";
 import { json } from "../lib/json";
 import type { AuthUser } from "../auth/jwt";
 import type { Env } from "../env";

@@ -1,6 +1,6 @@
 import { importShareLink } from "./endpoints/importShareLink";
-import { getBetByIdEndpoint } from "./endpoints/getBetById";
-import { listBetsEndpoint } from "./endpoints/listBets";
+import { listBetsEndpoint } from "./bets/listBetsEndpoint";
+import { getBetByIdEndpoint } from "./bets/getBetByIdEndpoint";
 import { buildCorsHeaders, json } from "./lib/json";
 import { registerEndpoint } from "./endpoints/register";
 import { loginEndpoint } from "./endpoints/login";

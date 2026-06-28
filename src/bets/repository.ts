@@ -1,5 +1,5 @@
 import type { Env } from "../env";
-import { createDbClient } from "./client";
+import { createDbClient } from "../db/client";
 
 type BetRow = {
   id: string;
