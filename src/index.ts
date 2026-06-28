@@ -1,6 +1,8 @@
 import { importShareLink } from "./endpoints/importShareLink";
-import { listBetsEndpoint } from "./bets/listBetsEndpoint";
-import { getBetByIdEndpoint } from "./bets/getBetByIdEndpoint";
+import {
+  getBetByIdController,
+  listBetsController,
+} from "./bets/controller";
 import { buildCorsHeaders, json } from "./lib/json";
 import { registerEndpoint } from "./endpoints/register";
 import { loginEndpoint } from "./endpoints/login";
@@ -63,11 +65,11 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/api/bets") {
-      return withAuth(listBetsEndpoint)(request, env, origin);
+      return withAuth(listBetsController)(request, env, origin);
     }
 
     if (request.method === "GET" && /^\/api\/bets\/[^/]+$/.test(url.pathname)) {
-      return withAuth(getBetByIdEndpoint)(request, env, origin);
+      return withAuth(getBetByIdController)(request, env, origin);
     }
 
     return json({ error: "Not found." }, 404, origin);
