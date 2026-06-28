@@ -9,6 +9,7 @@ import {
   googleAuthCallbackEndpoint,
   googleAuthStartEndpoint,
 } from "./endpoints/googleAuth";
+import { withAuth } from "./auth/withAuth";
 import type { Env } from "./env";
 
 export default {
@@ -58,15 +59,15 @@ export default {
       request.method === "POST" &&
       url.pathname === "/api/imports/share-link"
     ) {
-      return importShareLink(request, env, origin);
+      return withAuth(importShareLink)(request, env, origin);
     }
 
     if (request.method === "GET" && url.pathname === "/api/bets") {
-      return listBetsEndpoint(request, env, origin);
+      return withAuth(listBetsEndpoint)(request, env, origin);
     }
 
     if (request.method === "GET" && /^\/api\/bets\/[^/]+$/.test(url.pathname)) {
-      return getBetByIdEndpoint(request, env, origin);
+      return withAuth(getBetByIdEndpoint)(request, env, origin);
     }
 
     return json({ error: "Not found." }, 404, origin);

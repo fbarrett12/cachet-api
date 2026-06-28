@@ -1,12 +1,13 @@
 import { json } from "../lib/json";
 import { getBetById } from "../db/betReads";
-import { getCurrentUserFromRequest } from "../auth/requireUser";
+import type { AuthUser } from "../auth/jwt";
 import type { Env } from "../env";
 
 export async function getBetByIdEndpoint(
   request: Request,
   env: Env,
   origin: string,
+  authUser: AuthUser,
 ): Promise<Response> {
   const url = new URL(request.url);
   const pathParts = url.pathname.split("/").filter(Boolean);
@@ -14,12 +15,6 @@ export async function getBetByIdEndpoint(
 
   if (!betId) {
     return json({ error: "Bet ID is required." }, 400, origin);
-  }
-
-  const authUser = await getCurrentUserFromRequest(request, env);
-
-  if (!authUser) {
-    return json({ error: "Unauthorized." }, 401, origin);
   }
 
   try {

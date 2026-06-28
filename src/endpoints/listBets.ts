@@ -1,12 +1,13 @@
 import { listBets } from "../db/betReads";
 import { json } from "../lib/json";
-import { getCurrentUserFromRequest } from "../auth/requireUser";
+import type { AuthUser } from "../auth/jwt";
 import type { Env } from "../env";
 
 export async function listBetsEndpoint(
   request: Request,
   env: Env,
   origin: string,
+  authUser: AuthUser,
 ): Promise<Response> {
   const url = new URL(request.url);
   const rawLimit = url.searchParams.get("limit");
@@ -21,12 +22,6 @@ export async function listBetsEndpoint(
     }
 
     limit = parsed;
-  }
-
-  const authUser = await getCurrentUserFromRequest(request, env);
-
-  if (!authUser) {
-    return json({ error: "Unauthorized." }, 401, origin);
   }
 
   try {

@@ -1,4 +1,4 @@
-import { getCurrentUserFromRequest } from "../auth/requireUser";
+import type { AuthUser } from "../auth/jwt";
 import { createBetWithLegs } from "../db/bets";
 import {
   createBetImport,
@@ -17,6 +17,7 @@ export async function importShareLink(
   request: Request,
   env: Env,
   origin: string,
+  authUser: AuthUser,
 ): Promise<Response> {
   let body: unknown;
 
@@ -37,12 +38,6 @@ export async function importShareLink(
       400,
       origin,
     );
-  }
-
-  const authUser = await getCurrentUserFromRequest(request, env);
-
-  if (!authUser) {
-    return json({ error: "Unauthorized." }, 401, origin);
   }
 
   const shareUrl = parsed.data.url;
