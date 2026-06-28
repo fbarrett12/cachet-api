@@ -4,13 +4,13 @@ import {
   listBetsController,
 } from "./bets/controller";
 import { buildCorsHeaders, json } from "./lib/json";
-import { registerEndpoint } from "./endpoints/register";
-import { loginEndpoint } from "./endpoints/login";
-import { meEndpoint } from "./endpoints/me";
 import {
-  googleAuthCallbackEndpoint,
-  googleAuthStartEndpoint,
-} from "./endpoints/googleAuth";
+  googleAuthCallbackController,
+  googleAuthStartController,
+  loginController,
+  meController,
+  registerController,
+} from "./auth/controller";
 import { withAuth } from "./auth/withAuth";
 import type { Env } from "./env";
 
@@ -38,23 +38,23 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/api/auth/register") {
-      return registerEndpoint(request, env, origin);
+      return registerController(request, env, origin);
     }
 
     if (request.method === "POST" && url.pathname === "/api/auth/login") {
-      return loginEndpoint(request, env, origin);
-    }
-
-    if (request.method === "GET" && url.pathname === "/api/auth/google/start") {
-      return googleAuthStartEndpoint(request, env);
-    }
-
-    if (request.method === "GET" && url.pathname === "/api/auth/google/callback") {
-      return googleAuthCallbackEndpoint(request, env, origin);
+      return loginController(request, env, origin);
     }
 
     if (request.method === "GET" && url.pathname === "/api/auth/me") {
-      return meEndpoint(request, env, origin);
+      return withAuth(meController)(request, env, origin);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/auth/google/start") {
+      return googleAuthStartController(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/auth/google/callback") {
+      return googleAuthCallbackController(request, env, origin);
     }
 
     if (

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Env } from "../env";
 import { json } from "../lib/json";
-import { createPasswordUser, findUserByEmail } from "../db/users";
+import { createPasswordUser, findUserByEmail } from "../auth/repository";
 import { hashPassword } from "../auth/password";
 import { createSessionToken } from "../auth/jwt";
 

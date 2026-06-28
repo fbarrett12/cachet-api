@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { getCurrentUserFromRequest } from "../auth/requireUser";
-import { findUserById } from "../db/users";
+import { findUserById } from "../auth/repository";
 import { json } from "../lib/json";
 
 export async function meEndpoint(

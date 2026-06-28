@@ -3,7 +3,7 @@ import {
   createGoogleUser,
   findUserByEmail,
   findUserByGoogleSub,
-} from "../db/users";
+} from "../auth/repository";
 import type { Env } from "../env";
 import {
   buildGoogleAuthUrl,
