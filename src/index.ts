@@ -1,4 +1,4 @@
-import { importShareLink } from "./endpoints/importShareLink";
+import { importShareLinkController } from "./imports/controller";
 import {
   getBetByIdController,
   listBetsController,
@@ -61,7 +61,7 @@ export default {
       request.method === "POST" &&
       url.pathname === "/api/imports/share-link"
     ) {
-      return withAuth(importShareLink)(request, env, origin);
+      return withAuth(importShareLinkController)(request, env, origin);
     }
 
     if (request.method === "GET" && url.pathname === "/api/bets") {
