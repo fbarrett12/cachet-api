@@ -77,6 +77,14 @@ export function extractBetJsonBase64(
 }
 
 export function decodeBase64Json<T>(value: string): T {
-  const decoded = atob(value);
+  const binary = atob(value);
+
+  const bytes = Uint8Array.from(
+    binary,
+    (character) => character.charCodeAt(0),
+  );
+
+  const decoded = new TextDecoder("utf-8").decode(bytes);
+
   return JSON.parse(decoded) as T;
 }
