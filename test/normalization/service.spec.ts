@@ -112,4 +112,25 @@ describe("normalizeParsedBet", () => {
     expect(normalized.legs[0].playerName).toBe("Seiya Suzuki");
     expect(normalized.legs[1].playerName).toBe("Nico Hoerner");
   });
+
+  it("extracts player and market from Walks O/U", () => {
+    const parsedBet = {
+        sportsbook: "draftkings" as const,
+        betType: "single" as const,
+        legs: [
+        {
+            sport: "Baseball",
+            league: "MLB",
+            eventName: "NY Mets @ MIL Brewers",
+            marketSubtype: "Juan Soto Walks O/U",
+            selectionType: "Over 0.5",
+        },
+        ],
+    };
+
+    const normalized = normalizeParsedBet(parsedBet);
+
+    expect(normalized.legs[0].playerName).toBe("Juan Soto");
+    expect(normalized.legs[0].marketName).toBe("Walks");
+  });
 });

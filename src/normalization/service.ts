@@ -5,16 +5,47 @@ import type {
   NormalizedLeg,
 } from "./types";
 
-const KNOWN_MARKET_NAMES = [
-  "Hits + Runs + RBIs",
-  "Points + Rebounds + Assists",
-  "Points",
-  "Assists",
-  "Rebounds",
-  "Home Runs",
-  "Strikeouts Thrown",
-  "Total Bases",
-  "Moneyline",
+const MARKET_RULES = [
+  {
+    source: "Hits + Runs + RBIs",
+    canonical: "Hits + Runs + RBIs",
+  },
+  {
+    source: "Points + Rebounds + Assists",
+    canonical: "Points + Rebounds + Assists",
+  },
+  {
+    source: "Strikeouts Thrown",
+    canonical: "Strikeouts Thrown",
+  },
+  {
+    source: "Total Bases",
+    canonical: "Total Bases",
+  },
+  {
+    source: "Home Runs",
+    canonical: "Home Runs",
+  },
+  {
+    source: "Walks O/U",
+    canonical: "Walks",
+  },
+  {
+    source: "Points",
+    canonical: "Points",
+  },
+  {
+    source: "Assists",
+    canonical: "Assists",
+  },
+  {
+    source: "Rebounds",
+    canonical: "Rebounds",
+  },
+  {
+    source: "Moneyline",
+    canonical: "Moneyline",
+  },
 ];
 
 function stripLivePrefix(value: string | undefined): {
@@ -64,18 +95,18 @@ function normalizeMarketSubtype(
     };
   }
 
-  for (const marketName of KNOWN_MARKET_NAMES) {
-    if (value === marketName) {
+  for (const rule of MARKET_RULES) {
+    if (value === rule.source) {
       return {
-        marketName,
+        marketName: rule.canonical,
         isLive: stripped.isLive,
       };
     }
 
-    if (value.endsWith(` ${marketName}`)) {
+    if (value.endsWith(` ${rule.source}`)) {
       return {
-        playerName: value.slice(0, -marketName.length).trim(),
-        marketName,
+        playerName: value.slice(0, -rule.source.length).trim(),
+        marketName: rule.canonical,
         isLive: stripped.isLive,
       };
     }
