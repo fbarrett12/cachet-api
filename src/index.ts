@@ -13,7 +13,11 @@ import {
 } from "./auth/controller";
 import { withAuth } from "./auth/withAuth";
 import type { Env } from "./env";
-import { enrichBetLegs, buildEnrichmentReport } from "./enrichment/service";
+import { 
+  enrichBetLegs, 
+  buildEnrichmentReport,
+  buildDataHealthReport, 
+} from "./enrichment/service";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -83,6 +87,14 @@ export default {
     if (request.method === "POST" && url.pathname === "/api/enrichment/report") {
       return withAuth(async (_request, env, origin) => {
         const result = await buildEnrichmentReport(env);
+        return json(result, 200, origin);
+      })(request, env, origin);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/enrichment/data-health") {
+      return withAuth(async (_request, env, origin) => {
+        const result = await buildDataHealthReport(env);
+
         return json(result, 200, origin);
       })(request, env, origin);
     }

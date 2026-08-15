@@ -2,7 +2,9 @@ import type { Env } from "../env";
 import {
   countUnenrichedLegs,
   findCanonicalMarketMatch,
+  getLegDataHealthSummary,
   listUnenrichedLegs,
+  summarizePossibleNormalizationMisses,
   summarizeUnenrichedLeagues,
   summarizeUnenrichedMarkets,
   updateLegCanonicalRefs,
@@ -53,6 +55,17 @@ function inferMarketSlug(input: {
   }
 
   return null;
+}
+
+function percentage(
+  numerator: number,
+  denominator: number,
+): number {
+  if (denominator === 0) return 0;
+
+  return Number(
+    ((numerator / denominator) * 100).toFixed(1),
+  );
 }
 
 export async function enrichBetLegs(env: Env, input: { limit?: number }) {
@@ -133,5 +146,120 @@ export async function buildEnrichmentReport(env: Env) {
       league: leg.league,
       marketSubtype: leg.market_subtype,
     })),
+  };
+}
+
+export async function buildDataHealthReport(env: Env) {
+  const [
+    summary,
+    possibleNormalizationMisses,
+    enrichmentReport,
+  ] = await Promise.all([
+    getLegDataHealthSummary(env),
+    summarizePossibleNormalizationMisses(env, {
+      limit: 20,
+    }),
+    buildEnrichmentReport(env),
+  ]);
+
+  const totalLegs = Number(summary.total_legs);
+
+  const withSport = Number(summary.with_sport);
+  const withLeague = Number(summary.with_league);
+  const withPlayerName = Number(summary.with_player_name);
+  const withMarketSubtype = Number(summary.with_market_subtype);
+
+  const withCanonicalSport =
+    Number(summary.with_canonical_sport);
+
+  const withCanonicalLeague =
+    Number(summary.with_canonical_league);
+
+  const withCanonicalPlayer =
+    Number(summary.with_canonical_player);
+
+  const withCanonicalMarket =
+    Number(summary.with_canonical_market);
+
+  const withCanonicalEvent =
+    Number(summary.with_canonical_event);
+
+  return {
+    totalLegs,
+
+    parsedAndNormalized: {
+      sport: {
+        count: withSport,
+        coverage: percentage(withSport, totalLegs),
+      },
+
+      league: {
+        count: withLeague,
+        coverage: percentage(withLeague, totalLegs),
+      },
+
+      playerName: {
+        count: withPlayerName,
+        coverage: percentage(withPlayerName, totalLegs),
+      },
+
+      market: {
+        count: withMarketSubtype,
+        coverage: percentage(
+          withMarketSubtype,
+          totalLegs,
+        ),
+      },
+    },
+
+    canonicalDomain: {
+      sport: {
+        count: withCanonicalSport,
+        coverage: percentage(
+          withCanonicalSport,
+          totalLegs,
+        ),
+      },
+
+      league: {
+        count: withCanonicalLeague,
+        coverage: percentage(
+          withCanonicalLeague,
+          totalLegs,
+        ),
+      },
+
+      player: {
+        count: withCanonicalPlayer,
+        coverage: percentage(
+          withCanonicalPlayer,
+          totalLegs,
+        ),
+      },
+
+      market: {
+        count: withCanonicalMarket,
+        coverage: percentage(
+          withCanonicalMarket,
+          totalLegs,
+        ),
+      },
+
+      event: {
+        count: withCanonicalEvent,
+        coverage: percentage(
+          withCanonicalEvent,
+          totalLegs,
+        ),
+      },
+    },
+
+    possibleNormalizationMisses:
+      possibleNormalizationMisses.map((row) => ({
+        marketSubtype: row.market_subtype,
+        count: Number(row.count),
+      })),
+
+    enrichment: enrichmentReport,
   };
 }

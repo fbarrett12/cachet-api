@@ -211,3 +211,118 @@ export async function countUnenrichedLegs(env: Env): Promise<number> {
     await client.end();
   }
 }
+
+export type LegDataHealthSummaryRow = {
+  total_legs: string;
+  with_sport: string;
+  with_league: string;
+  with_player_name: string;
+  with_market_subtype: string;
+  with_canonical_sport: string;
+  with_canonical_league: string;
+  with_canonical_player: string;
+  with_canonical_market: string;
+  with_canonical_event: string;
+};
+
+export type PossibleNormalizationMissRow = {
+  market_subtype: string;
+  count: string;
+};
+
+export async function getLegDataHealthSummary(
+  env: Env,
+): Promise<LegDataHealthSummaryRow> {
+  const client = createDbClient(env);
+  await client.connect();
+
+  try {
+    const sql = `
+      select
+        count(*)::text as total_legs,
+
+        count(*) filter (
+          where sport is not null
+        )::text as with_sport,
+
+        count(*) filter (
+          where league is not null
+        )::text as with_league,
+
+        count(*) filter (
+          where player_name is not null
+        )::text as with_player_name,
+
+        count(*) filter (
+          where market_subtype is not null
+        )::text as with_market_subtype,
+
+        count(*) filter (
+          where canonical_sport_id is not null
+        )::text as with_canonical_sport,
+
+        count(*) filter (
+          where canonical_league_id is not null
+        )::text as with_canonical_league,
+
+        count(*) filter (
+          where canonical_player_id is not null
+        )::text as with_canonical_player,
+
+        count(*) filter (
+          where canonical_market_id is not null
+        )::text as with_canonical_market,
+
+        count(*) filter (
+          where canonical_event_id is not null
+        )::text as with_canonical_event
+
+      from bet_legs
+    `;
+
+    const values: unknown[] = [];
+
+    const result =
+      await client.query<LegDataHealthSummaryRow>(sql, values);
+
+    return result.rows[0];
+  } finally {
+    await client.end();
+  }
+}
+
+export async function summarizePossibleNormalizationMisses(
+  env: Env,
+  input: {
+    limit?: number;
+  },
+): Promise<PossibleNormalizationMissRow[]> {
+  const client = createDbClient(env);
+  await client.connect();
+
+  try {
+    const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
+
+    const sql = `
+      select
+        market_subtype,
+        count(*)::text as count
+      from bet_legs
+      where player_name is null
+        and market_subtype is not null
+        and lower(market_subtype) <> 'moneyline'
+      group by market_subtype
+      order by count(*) desc
+      limit $1
+    `;
+
+    const values = [limit];
+
+    const result =
+      await client.query<PossibleNormalizationMissRow>(sql, values);
+
+    return result.rows;
+  } finally {
+    await client.end();
+  }
+}
