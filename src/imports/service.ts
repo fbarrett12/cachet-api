@@ -9,6 +9,7 @@ import {
   createBetImport,
   updateBetImportAfterParse,
 } from "./repository";
+import { normalizeParsedBet } from "../normalization/service";
 
 const PARSER_VERSION = "draftkings_social_v2_nested";
 
@@ -40,12 +41,17 @@ export async function importSharedBet(
     userId,
   });
 
-  const html = await fetchHtml(shareUrl);
+  const html =
+  sportsbook === "draftkings"
+    ? ""
+    : await fetchHtml(shareUrl);
 
+  if (html) {
   console.log("Fetched share HTML", {
     importId: createdImport.id,
     length: html.length,
   });
+}
 
   const parserResult = await parseSharePage(sportsbook, {
     html,
@@ -68,13 +74,17 @@ export async function importSharedBet(
   });
 
   let betId: string | undefined;
+  let normalizedBet;
 
   if (parserResult.parseStatus === "parsed" && parserResult.parsedBet) {
+    normalizedBet = normalizeParsedBet(parserResult.parsedBet);
+
     const persistedBet = await createBetWithLegs(env, {
       userId,
       sportsbookSlug: sportsbook,
       betImportId: createdImport.id,
       parsedBet: parserResult.parsedBet,
+      normalizedBet,
     });
 
     betId = persistedBet.betId;
@@ -90,7 +100,10 @@ export async function importSharedBet(
     betId,
     sportsbook,
     status: parserResult.parseStatus,
+
     parsedBet: parserResult.parsedBet,
+    normalizedBet,
+
     message,
   };
 }

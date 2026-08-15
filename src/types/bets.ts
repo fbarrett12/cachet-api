@@ -21,6 +21,7 @@ export const ParsedBetLegSchema = z.object({
   marketSubtype: z.string().optional(),
   selectionType: z.string().optional(),
   playerName: z.string().optional(),
+  teamName: z.string().optional(),
   lineValue: z.number().optional(),
   oddsAmerican: z.number().optional(),
   startsAt: z.string().optional(),

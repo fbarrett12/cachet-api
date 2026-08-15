@@ -1,6 +1,7 @@
 import type { Env } from "../env";
 import type { ParsedBet } from "../types/bets";
 import { createDbClient } from "./client";
+import type { NormalizedBet } from "../normalization/types";
 
 function dollarsToCents(value: number | undefined): number | null {
   if (value == null) return null;
@@ -14,6 +15,7 @@ export async function createBetWithLegs(
     sportsbookSlug: "draftkings" | "fanduel" | "unknown";
     betImportId: string;
     parsedBet: ParsedBet;
+    normalizedBet: NormalizedBet;
   },
 ): Promise<{ betId: string }> {
   const client = createDbClient(env);
@@ -61,28 +63,28 @@ export async function createBetWithLegs(
         input.userId ?? null,
         input.sportsbookSlug,
         input.betImportId,
-        input.parsedBet.externalBetId ?? null,
-        input.parsedBet.betType,
-        input.parsedBet.status ?? "pending",
-        input.parsedBet.placedAt ?? null,
-        dollarsToCents(input.parsedBet.stake),
-        dollarsToCents(input.parsedBet.payout),
-        dollarsToCents(input.parsedBet.potentialPayout),
+        input.normalizedBet.externalBetId ?? null,
+        input.normalizedBet.betType,
+        input.normalizedBet.status ?? "pending",
+        input.normalizedBet.placedAt ?? null,
+        dollarsToCents(input.normalizedBet.stake),
+        dollarsToCents(input.normalizedBet.payout),
+        dollarsToCents(input.normalizedBet.potentialPayout),
       ],
     );
 
     const betId = betInsertResult.rows[0].id;
 
     const groups =
-      input.parsedBet.groups?.length
-        ? input.parsedBet.groups
+      input.normalizedBet.groups?.length
+        ? input.normalizedBet.groups
         : [
             {
               groupType: "standalone" as const,
               label: "Ungrouped",
               eventName: undefined,
               legOrder: 0,
-              legs: input.parsedBet.legs,
+              legs: input.normalizedBet.legs,
             },
           ];
 
@@ -155,10 +157,10 @@ export async function createBetWithLegs(
             leg.league ?? null,
             leg.eventName ?? null,
             leg.marketType ?? null,
-            leg.marketSubtype ?? null,
-            leg.selectionType ?? null,
+            leg.marketName ?? null,
+            leg.selection ?? null,
             leg.playerName ?? null,
-            leg.lineValue ?? null,
+            leg.line ?? null,
             leg.oddsAmerican ?? null,
             leg.result ?? "pending",
             leg.startsAt ?? null,
