@@ -310,7 +310,10 @@ export async function summarizePossibleNormalizationMisses(
       from bet_legs
       where player_name is null
         and market_subtype is not null
-        and lower(market_subtype) <> 'moneyline'
+        and lower(market_subtype) not in (
+          'moneyline',
+          'live moneyline'
+        )
       group by market_subtype
       order by count(*) desc
       limit $1
