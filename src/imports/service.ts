@@ -9,7 +9,7 @@ import {
   createBetImport,
   updateBetImportAfterParse,
 } from "./repository";
-import { normalizeParsedBet } from "../normalization/service";
+import { normalizeParsedBet } from "../normalization/normalizer";
 
 const PARSER_VERSION = "draftkings_social_v2_nested";
 
