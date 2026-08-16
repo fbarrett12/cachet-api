@@ -25,16 +25,30 @@ export async function getPlayerAnalytics(
     return null;
   }
 
-  const totalLegs = Number(row.total_legs);
-  const wins = Number(row.wins);
-  const losses = Number(row.losses);
+  const totalSelections = Number(row.total_legs);
+  const hits = Number(row.leg_hits);
+  const misses = Number(row.leg_misses);
+
+  const totalBets = Number(row.total_bets);
+  const betWins = Number(row.bet_wins);
+  const betLosses = Number(row.bet_losses);
 
   return {
     playerId: row.player_id,
     playerName: row.player_name,
-    totalLegs,
-    wins,
-    losses,
-    winRate: percentage(wins, wins + losses),
+
+    legPerformance: {
+      totalSelections,
+      hits,
+      misses,
+      hitRate: percentage(hits, hits + misses),
+    },
+
+    betPerformance: {
+      totalBets,
+      wins: betWins,
+      losses: betLosses,
+      winRate: percentage(betWins, betWins + betLosses),
+    },
   };
 }

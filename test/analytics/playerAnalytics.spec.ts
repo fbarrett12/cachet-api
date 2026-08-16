@@ -22,10 +22,15 @@ describe("getPlayerAnalytics", () => {
   it("returns player betting performance for the current user", async () => {
     mocks.getPlayerBettingPerformance.mockResolvedValue({
         player_id: "player-123",
-        player_name: "Aaron Judge",
-        total_legs: "9",
-        wins: "6",
-        losses: "3",
+        player_name: "James Wood",
+
+        total_legs: "2",
+        leg_hits: "2",
+        leg_misses: "0",
+
+        total_bets: "2",
+        bet_wins: "0",
+        bet_losses: "2",
     });
 
     const result = await getPlayerAnalytics(env, {
@@ -39,12 +44,22 @@ describe("getPlayerAnalytics", () => {
     });
 
     expect(result).toEqual({
-      playerId: "player-123",
-      playerName: "Aaron Judge",
-      totalLegs: 9,
-      wins: 6,
-      losses: 3,
-      winRate: 66.7,
+        playerId: "player-123",
+        playerName: "James Wood",
+
+        legPerformance: {
+        totalSelections: 2,
+        hits: 2,
+        misses: 0,
+        hitRate: 100,
+        },
+
+        betPerformance: {
+        totalBets: 2,
+        wins: 0,
+        losses: 2,
+        winRate: 0,
+        },
     });
   });
 
