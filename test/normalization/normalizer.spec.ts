@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeParsedBet } from "../../src/normalization/service";
+import { normalizeParsedBet } from "../../src/normalization/normalizer";
 
 describe("normalizeParsedBet", () => {
   it("extracts a player from an MLB HRRBI market", () => {
