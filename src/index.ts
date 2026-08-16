@@ -20,6 +20,7 @@ import {
 } from "./enrichment/service";
 import { enrichCanonicalPlayers } from "./enrichment/playerService";
 import { backfillNormalizedLegs } from "./normalization/service";
+import { getPlayerAnalyticsController } from "./analytics/playerController";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -119,6 +120,14 @@ export default {
 
         return json(result, 200, origin);
       })(request, env, origin);
+    }
+
+    if (request.method === "GET" && /^\/api\/analytics\/players\/[^/]+$/.test(url.pathname)) {
+      return withAuth(getPlayerAnalyticsController)(
+        request,
+        env,
+        origin,
+      );
     }
 
     return json({ error: "Not found." }, 404, origin);
