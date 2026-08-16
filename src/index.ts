@@ -18,6 +18,7 @@ import {
   buildEnrichmentReport,
   buildDataHealthReport, 
 } from "./enrichment/service";
+import { enrichCanonicalPlayers } from "./enrichment/playerService";
 import { backfillNormalizedLegs } from "./normalization/service";
 
 export default {
@@ -95,6 +96,16 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/enrichment/data-health") {
       return withAuth(async (_request, env, origin) => {
         const result = await buildDataHealthReport(env);
+
+        return json(result, 200, origin);
+      })(request, env, origin);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/enrichment/players") {
+      return withAuth(async (_request, env, origin) => {
+        const result = await enrichCanonicalPlayers(env, {
+          limit: 50,
+        });
 
         return json(result, 200, origin);
       })(request, env, origin);
