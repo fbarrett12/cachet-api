@@ -21,6 +21,7 @@ import {
 import { enrichCanonicalPlayers } from "./enrichment/playerService";
 import { backfillNormalizedLegs } from "./normalization/service";
 import { getPlayerAnalyticsController } from "./analytics/playerController";
+import { getBettorRankingsController } from "./analytics/rankingsController";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -124,6 +125,14 @@ export default {
 
     if (request.method === "GET" && /^\/api\/analytics\/players\/[^/]+$/.test(url.pathname)) {
       return withAuth(getPlayerAnalyticsController)(
+        request,
+        env,
+        origin,
+      );
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/analytics/rankings") {
+      return withAuth(getBettorRankingsController)(
         request,
         env,
         origin,
