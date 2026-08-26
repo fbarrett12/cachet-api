@@ -76,6 +76,15 @@ function stripLivePrefix(value: string | undefined): {
   };
 }
 
+function isFuturesMarket(marketSubtype: string): boolean {
+  const normalized = marketSubtype.toLowerCase().trim();
+
+  return (
+    normalized.includes("player to record") &&
+    normalized.includes("regular season")
+  );
+}
+
 function normalizeMarketSubtype(
   marketSubtype: string | undefined,
 ): {
@@ -88,6 +97,13 @@ function normalizeMarketSubtype(
 
   if (!value) {
     return {
+      isLive: stripped.isLive,
+    };
+  }
+
+  if (isFuturesMarket(marketSubtype)) {
+    return {
+      marketName: marketSubtype,
       isLive: stripped.isLive,
     };
   }

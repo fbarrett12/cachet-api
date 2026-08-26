@@ -133,4 +133,28 @@ describe("normalizeParsedBet", () => {
     expect(normalized.legs[0].playerName).toBe("Juan Soto");
     expect(normalized.legs[0].marketName).toBe("Walks");
   });
+
+  it("does not treat futures market text as a player name", () => {
+    const parsedBet = {
+      sportsbook: "draftkings" as const,
+      betType: "single" as const,
+      legs: [
+        {
+          sport: "Baseball",
+          league: "MLB",
+          marketSubtype:
+            "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+          selectionType: "Yes",
+        },
+      ],
+    };
+
+    const normalized = normalizeParsedBet(parsedBet);
+
+    expect(normalized.legs[0].playerName).toBeUndefined();
+
+    expect(normalized.legs[0].marketName).toBe(
+      "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+    );
+  });
 });

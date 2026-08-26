@@ -44,8 +44,11 @@ export async function listLegsNeedingNormalization(
         starts_at
       from bet_legs
       where market_subtype is not null
-        and player_name is null
-      order by created_at asc
+        and (
+          $2::uuid is null
+          or id > $2
+        )
+      order by id asc
       limit $1
     `;
 
@@ -64,8 +67,9 @@ export async function updateNormalizedLeg(
   env: Env,
   input: {
     legId: string;
-    playerName: string;
+    playerName: string | null;
     marketName: string;
+    clearCanonicalPlayer?: boolean;
   },
 ): Promise<void> {
   const client = createDbClient(env);
@@ -76,7 +80,11 @@ export async function updateNormalizedLeg(
       update bet_legs
       set
         player_name = $2,
-        market_subtype = $3
+        market_subtype = $3,
+        canonical_player_id = case
+          when $4 then null
+          else canonical_player_id
+        end
       where id = $1
     `;
 

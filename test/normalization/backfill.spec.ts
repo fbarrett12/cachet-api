@@ -58,4 +58,44 @@ describe("backfillNormalizedLegs", () => {
       unchangedCount: 0,
     });
   });
+
+  it("clears an incorrectly normalized player name for a futures market", async () => {
+    mocks.listLegsNeedingNormalization.mockResolvedValue([
+      {
+        id: "leg-future-1",
+        sport: "Baseball",
+        league: "MLB",
+        event_name: null,
+        market_type: "game",
+        market_subtype:
+          "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+        selection_type: "Yes",
+        player_name:
+          "MLB 2026 - Player to Record 30+ Regular Season",
+        line_value: null,
+        odds_american: null,
+        result: null,
+        starts_at: null,
+      },
+    ]);
+
+    mocks.updateNormalizedLeg.mockResolvedValue(undefined);
+
+    const result = await backfillNormalizedLegs(env, {
+      limit: 50,
+    });
+
+    expect(mocks.updateNormalizedLeg).toHaveBeenCalledWith(env, {
+      legId: "leg-future-1",
+      playerName: null,
+      marketName:
+        "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+    });
+
+    expect(result).toEqual({
+      inspectedCount: 1,
+      updatedCount: 1,
+      unchangedCount: 0,
+    });
+  });
 });
