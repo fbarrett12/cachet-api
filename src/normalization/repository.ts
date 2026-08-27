@@ -20,6 +20,7 @@ export async function listLegsNeedingNormalization(
   env: Env,
   input: {
     limit?: number;
+    afterId?: string;
   },
 ): Promise<NormalizableLegRow[]> {
   const client = createDbClient(env);
@@ -52,7 +53,10 @@ export async function listLegsNeedingNormalization(
       limit $1
     `;
 
-    const values = [limit];
+    const values = [
+      limit,
+      input.afterId,
+    ];
 
     const result =
       await client.query<NormalizableLegRow>(sql, values);

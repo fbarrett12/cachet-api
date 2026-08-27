@@ -7,8 +7,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../src/normalization/repository", () => ({
-  listLegsNeedingNormalization: mocks.listLegsNeedingNormalization,
-  updateNormalizedLeg: mocks.updateNormalizedLeg,
+  listLegsNeedingNormalization:
+    mocks.listLegsNeedingNormalization,
+  updateNormalizedLeg:
+    mocks.updateNormalizedLeg,
 }));
 
 import { backfillNormalizedLegs } from "../../src/normalization/service";
@@ -20,7 +22,7 @@ describe("backfillNormalizedLegs", () => {
     vi.clearAllMocks();
   });
 
-  it("backfills player and market data for a historical player prop", async () => {
+  it("fills missing normalization data", async () => {
     mocks.listLegsNeedingNormalization.mockResolvedValue([
       {
         id: "leg-123",
@@ -44,22 +46,22 @@ describe("backfillNormalizedLegs", () => {
       limit: 50,
     });
 
-    expect(mocks.updateNormalizedLeg).toHaveBeenCalledOnce();
-
     expect(mocks.updateNormalizedLeg).toHaveBeenCalledWith(env, {
       legId: "leg-123",
       playerName: "Aaron Judge",
       marketName: "Hits + Runs + RBIs",
+      clearCanonicalPlayer: false,
     });
 
     expect(result).toEqual({
       inspectedCount: 1,
       updatedCount: 1,
       unchangedCount: 0,
+      nextCursor: "leg-123",
     });
   });
 
-  it("clears an incorrectly normalized player name for a futures market", async () => {
+  it("repairs incorrectly normalized futures data", async () => {
     mocks.listLegsNeedingNormalization.mockResolvedValue([
       {
         id: "leg-future-1",
@@ -90,12 +92,109 @@ describe("backfillNormalizedLegs", () => {
       playerName: null,
       marketName:
         "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+      clearCanonicalPlayer: true,
     });
 
     expect(result).toEqual({
       inspectedCount: 1,
       updatedCount: 1,
       unchangedCount: 0,
+      nextCursor: "leg-future-1",
+    });
+  });
+
+  it("does not write when stored normalization already matches current normalization", async () => {
+    mocks.listLegsNeedingNormalization.mockResolvedValue([
+      {
+        id: "leg-456",
+        sport: "Baseball",
+        league: "MLB",
+        event_name: "WAS Nationals @ COL Rockies",
+        market_type: "game",
+        market_subtype: "Hits + Runs + RBIs",
+        selection_type: "2+",
+        player_name: "James Wood",
+        line_value: null,
+        odds_american: -250,
+        result: "won",
+        starts_at: "2026-07-22T00:40:00Z",
+      },
+    ]);
+
+    const result = await backfillNormalizedLegs(env, {
+      limit: 50,
+    });
+
+    expect(mocks.updateNormalizedLeg).not.toHaveBeenCalled();
+
+    expect(result).toEqual({
+      inspectedCount: 1,
+      updatedCount: 0,
+      unchangedCount: 1,
+      nextCursor: "leg-456",
+    });
+  });
+
+  it("passes the cursor to the repository and returns the last inspected id as nextCursor", async () => {
+    mocks.listLegsNeedingNormalization.mockResolvedValue([
+      {
+        id: "leg-101",
+        sport: "Baseball",
+        league: "MLB",
+        event_name: null,
+        market_type: "game",
+        market_subtype: "Moneyline",
+        selection_type: "NY Yankees",
+        player_name: null,
+        line_value: null,
+        odds_american: -120,
+        result: "won",
+        starts_at: null,
+      },
+      {
+        id: "leg-202",
+        sport: "Baseball",
+        league: "MLB",
+        event_name: null,
+        market_type: "game",
+        market_subtype: "Moneyline",
+        selection_type: "LA Dodgers",
+        player_name: null,
+        line_value: null,
+        odds_american: -110,
+        result: "lost",
+        starts_at: null,
+      },
+    ]);
+
+    const result = await backfillNormalizedLegs(env, {
+      limit: 50,
+      afterId: "leg-050",
+    });
+
+    expect(
+      mocks.listLegsNeedingNormalization,
+    ).toHaveBeenCalledWith(env, {
+      limit: 50,
+      afterId: "leg-050",
+    });
+
+    expect(result.nextCursor).toBe("leg-202");
+  });
+
+  it("returns null nextCursor when no rows remain", async () => {
+    mocks.listLegsNeedingNormalization.mockResolvedValue([]);
+
+    const result = await backfillNormalizedLegs(env, {
+      limit: 50,
+      afterId: "leg-final",
+    });
+
+    expect(result).toEqual({
+      inspectedCount: 0,
+      updatedCount: 0,
+      unchangedCount: 0,
+      nextCursor: null,
     });
   });
 });

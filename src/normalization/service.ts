@@ -14,6 +14,7 @@ export async function backfillNormalizedLegs(
 ) {
   const legs = await listLegsNeedingNormalization(env, {
     limit: input.limit,
+    afterId: input.afterId,
   });
 
   let updatedCount = 0;
@@ -68,13 +69,15 @@ export async function backfillNormalizedLegs(
     updatedCount += 1;
   }
 
+  const nextCursor =
+    legs.length > 0
+      ? legs[legs.length - 1].id
+      : null;
+
   return {
     inspectedCount: legs.length,
     updatedCount,
     unchangedCount,
-    nextCursor:
-      legs.length > 0
-        ? legs[legs.length - 1].id
-        : null,
+    nextCursor,
   };
 }
