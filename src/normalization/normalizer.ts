@@ -9,6 +9,8 @@ import type {
   NormalizedLeg,
 } from "./types";
 
+export const NORMALIZATION_VERSION = "market_v2_futures";
+
 const MARKET_RULES = [
   {
     source: "Hits + Runs + RBIs",
@@ -101,9 +103,9 @@ function normalizeMarketSubtype(
     };
   }
 
-  if (isFuturesMarket(marketSubtype)) {
+  if (isFuturesMarket(value)) {
     return {
-      marketName: marketSubtype,
+      marketName: value,
       isLive: stripped.isLive,
     };
   }

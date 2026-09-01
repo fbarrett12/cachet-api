@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import type { ParsedBet } from "../types/bets";
 import { createDbClient } from "./client";
 import type { NormalizedBet } from "../normalization/types";
+import { NORMALIZATION_VERSION } from "../normalization/normalizer";
 
 function dollarsToCents(value: number | undefined): number | null {
   if (value == null) return null;
@@ -123,6 +124,8 @@ export async function createBetWithLegs(
               event_name,
               market_type,
               market_subtype,
+              raw_market_subtype,
+              normalization_version,
               selection_type,
               player_name,
               line_value,
@@ -158,6 +161,8 @@ export async function createBetWithLegs(
             leg.eventName ?? null,
             leg.marketType ?? null,
             leg.marketName ?? null,
+            leg.rawMarketSubtype ?? null,
+            NORMALIZATION_VERSION,
             leg.selection ?? null,
             leg.playerName ?? null,
             leg.line ?? null,

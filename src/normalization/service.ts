@@ -26,7 +26,7 @@ export async function backfillNormalizedLegs(
       league: leg.league ?? undefined,
       eventName: leg.event_name ?? undefined,
       marketType: leg.market_type ?? undefined,
-      marketSubtype: leg.market_subtype ?? undefined,
+      marketSubtype: leg.raw_market_subtype ?? undefined,
       selectionType: leg.selection_type ?? undefined,
 
       lineValue: leg.line_value ?? undefined,

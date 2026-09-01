@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { createDbClient } from "../db/client";
+import { NORMALIZATION_VERSION } from "./normalizer";
 
 export type NormalizableLegRow = {
   id: string;
@@ -8,6 +9,8 @@ export type NormalizableLegRow = {
   event_name: string | null;
   market_type: string | null;
   market_subtype: string | null;
+  raw_market_subtype: string | null;
+  normalization_version: string | null;
   selection_type: string | null;
   player_name: string | null;
   line_value: number | null;
@@ -37,6 +40,8 @@ export async function listLegsNeedingNormalization(
         event_name,
         market_type,
         market_subtype,
+        raw_market_subtype,
+        normalization_version,
         selection_type,
         player_name,
         line_value,
@@ -44,10 +49,11 @@ export async function listLegsNeedingNormalization(
         result,
         starts_at
       from bet_legs
-      where market_subtype is not null
+      where raw_market_subtype is not null
+        and normalization_version is distinct from $2
         and (
-          $2::uuid is null
-          or id > $2
+          $3::uuid is null
+          or id > $3
         )
       order by id asc
       limit $1
@@ -55,7 +61,8 @@ export async function listLegsNeedingNormalization(
 
     const values = [
       limit,
-      input.afterId,
+      NORMALIZATION_VERSION,
+      input.afterId ?? null,
     ];
 
     const result =
@@ -96,6 +103,7 @@ export async function updateNormalizedLeg(
       input.legId,
       input.playerName,
       input.marketName,
+      input.clearCanonicalPlayer ?? false,
     ];
 
     await client.query(sql, values);
