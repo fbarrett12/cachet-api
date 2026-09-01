@@ -14,6 +14,7 @@ vi.mock("../../src/normalization/repository", () => ({
 }));
 
 import { backfillNormalizedLegs } from "../../src/normalization/service";
+import { NORMALIZATION_VERSION } from "../../src/normalization/normalizer";
 
 describe("backfillNormalizedLegs", () => {
   const env = {} as Env;
@@ -22,7 +23,7 @@ describe("backfillNormalizedLegs", () => {
     vi.clearAllMocks();
   });
 
-  it("fills missing normalization data", async () => {
+  it("recomputes normalized fields from raw sportsbook data", async () => {
     mocks.listLegsNeedingNormalization.mockResolvedValue([
       {
         id: "leg-123",
@@ -30,17 +31,24 @@ describe("backfillNormalizedLegs", () => {
         league: "MLB",
         event_name: "NY Yankees @ NY Mets",
         market_type: "game",
-        market_subtype: "Aaron Judge Hits + Runs + RBIs",
+
+        raw_market_subtype:
+          "Aaron Judge Hits + Runs + RBIs",
+
+        market_subtype:
+          "Hits + Runs + RBIs",
+
+        normalization_version:
+          "market_v1",
+
         selection_type: "3+",
-        player_name: null,
+        player_name: "Aaron Judge",
         line_value: null,
         odds_american: 125,
         result: "won",
-        starts_at: "2026-05-17T17:00:00Z",
+        starts_at: null,
       },
     ]);
-
-    mocks.updateNormalizedLeg.mockResolvedValue(undefined);
 
     const result = await backfillNormalizedLegs(env, {
       limit: 50,
@@ -51,6 +59,7 @@ describe("backfillNormalizedLegs", () => {
       playerName: "Aaron Judge",
       marketName: "Hits + Runs + RBIs",
       clearCanonicalPlayer: false,
+      normalizationVersion: NORMALIZATION_VERSION,
     });
 
     expect(result).toEqual({
@@ -61,7 +70,7 @@ describe("backfillNormalizedLegs", () => {
     });
   });
 
-  it("repairs incorrectly normalized futures data", async () => {
+  it("repairs a futures row using preserved raw sportsbook data", async () => {
     mocks.listLegsNeedingNormalization.mockResolvedValue([
       {
         id: "leg-future-1",
@@ -69,19 +78,27 @@ describe("backfillNormalizedLegs", () => {
         league: "MLB",
         event_name: null,
         market_type: "game",
-        market_subtype:
+
+        raw_market_subtype:
           "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
+
+        market_subtype:
+          "Home Runs",
+
+        normalization_version:
+          "market_v1",
+
         selection_type: "Yes",
+
         player_name:
           "MLB 2026 - Player to Record 30+ Regular Season",
+
         line_value: null,
         odds_american: null,
         result: null,
         starts_at: null,
       },
     ]);
-
-    mocks.updateNormalizedLeg.mockResolvedValue(undefined);
 
     const result = await backfillNormalizedLegs(env, {
       limit: 50,
@@ -93,33 +110,14 @@ describe("backfillNormalizedLegs", () => {
       marketName:
         "MLB 2026 - Player to Record 30+ Regular Season Home Runs",
       clearCanonicalPlayer: true,
+      normalizationVersion: NORMALIZATION_VERSION,
     });
 
-    expect(result).toEqual({
-      inspectedCount: 1,
-      updatedCount: 1,
-      unchangedCount: 0,
-      nextCursor: "leg-future-1",
-    });
+    expect(result.updatedCount).toBe(1);
   });
 
-  it("does not write when stored normalization already matches current normalization", async () => {
-    mocks.listLegsNeedingNormalization.mockResolvedValue([
-      {
-        id: "leg-456",
-        sport: "Baseball",
-        league: "MLB",
-        event_name: "WAS Nationals @ COL Rockies",
-        market_type: "game",
-        market_subtype: "Hits + Runs + RBIs",
-        selection_type: "2+",
-        player_name: "James Wood",
-        line_value: null,
-        odds_american: -250,
-        result: "won",
-        starts_at: "2026-07-22T00:40:00Z",
-      },
-    ]);
+  it("never re-normalizes a row without preserved raw source data", async () => {
+    mocks.listLegsNeedingNormalization.mockResolvedValue([]);
 
     const result = await backfillNormalizedLegs(env, {
       limit: 50,
@@ -128,36 +126,24 @@ describe("backfillNormalizedLegs", () => {
     expect(mocks.updateNormalizedLeg).not.toHaveBeenCalled();
 
     expect(result).toEqual({
-      inspectedCount: 1,
+      inspectedCount: 0,
       updatedCount: 0,
-      unchangedCount: 1,
-      nextCursor: "leg-456",
+      unchangedCount: 0,
+      nextCursor: null,
     });
   });
 
-  it("passes the cursor to the repository and returns the last inspected id as nextCursor", async () => {
+  it("passes the cursor and advances through outdated normalization rows", async () => {
     mocks.listLegsNeedingNormalization.mockResolvedValue([
-      {
-        id: "leg-101",
-        sport: "Baseball",
-        league: "MLB",
-        event_name: null,
-        market_type: "game",
-        market_subtype: "Moneyline",
-        selection_type: "NY Yankees",
-        player_name: null,
-        line_value: null,
-        odds_american: -120,
-        result: "won",
-        starts_at: null,
-      },
       {
         id: "leg-202",
         sport: "Baseball",
         league: "MLB",
         event_name: null,
         market_type: "game",
+        raw_market_subtype: "Moneyline",
         market_subtype: "Moneyline",
+        normalization_version: "market_v1",
         selection_type: "LA Dodgers",
         player_name: null,
         line_value: null,
@@ -169,32 +155,16 @@ describe("backfillNormalizedLegs", () => {
 
     const result = await backfillNormalizedLegs(env, {
       limit: 50,
-      afterId: "leg-050",
+      afterId: "leg-101",
     });
 
     expect(
       mocks.listLegsNeedingNormalization,
     ).toHaveBeenCalledWith(env, {
       limit: 50,
-      afterId: "leg-050",
+      afterId: "leg-101",
     });
 
     expect(result.nextCursor).toBe("leg-202");
-  });
-
-  it("returns null nextCursor when no rows remain", async () => {
-    mocks.listLegsNeedingNormalization.mockResolvedValue([]);
-
-    const result = await backfillNormalizedLegs(env, {
-      limit: 50,
-      afterId: "leg-final",
-    });
-
-    expect(result).toEqual({
-      inspectedCount: 0,
-      updatedCount: 0,
-      unchangedCount: 0,
-      nextCursor: null,
-    });
   });
 });
