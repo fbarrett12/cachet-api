@@ -67,6 +67,7 @@ export async function backfillNormalizedLegs(
       clearCanonicalPlayer:
         currentPlayerName !== null &&
         normalizedPlayerName === null,
+        normalizationVersion: NORMALIZATION_VERSION,
     });
 
     updatedCount += 1;

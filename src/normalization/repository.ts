@@ -81,6 +81,7 @@ export async function updateNormalizedLeg(
     playerName: string | null;
     marketName: string;
     clearCanonicalPlayer?: boolean;
+    normalizationVersion: string;
   },
 ): Promise<void> {
   const client = createDbClient(env);
@@ -95,7 +96,8 @@ export async function updateNormalizedLeg(
         canonical_player_id = case
           when $4 then null
           else canonical_player_id
-        end
+        end,
+        normalization_version = $5
       where id = $1
     `;
 
@@ -104,6 +106,7 @@ export async function updateNormalizedLeg(
       input.playerName,
       input.marketName,
       input.clearCanonicalPlayer ?? false,
+      input.normalizationVersion,
     ];
 
     await client.query(sql, values);
