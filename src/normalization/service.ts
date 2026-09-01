@@ -1,5 +1,5 @@
 import type { Env } from "../env";
-import { normalizeLeg } from "./normalizer";
+import { NORMALIZATION_VERSION, normalizeLeg } from "./normalizer";
 import {
   listLegsNeedingNormalization,
   updateNormalizedLeg,
@@ -52,7 +52,10 @@ export async function backfillNormalizedLegs(
     const marketChanged =
       normalized.marketName !== leg.market_subtype;
 
-    if (!playerChanged && !marketChanged) {
+    const versionChanged =
+      leg.normalization_version !== NORMALIZATION_VERSION;
+
+    if (!playerChanged && !marketChanged && !versionChanged) {
       unchangedCount += 1;
       continue;
     }
