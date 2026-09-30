@@ -7,8 +7,8 @@ import {
 function percentage(
   numerator: number,
   denominator: number,
-): number {
-  if (denominator === 0) return 0;
+): number | null {
+  if (denominator === 0) return null;
 
   return Number(
     ((numerator / denominator) * 100).toFixed(1),
@@ -31,38 +31,42 @@ export async function getBettorRankings(
 
   return {
     players: playerRows.map((row) => {
+      const totalSelections = Number(row.total_selections);
       const hits = Number(row.hits);
       const misses = Number(row.misses);
+      const settledSelections = hits + misses;
 
       return {
         playerId: row.player_id,
         playerName: row.player_name,
-        totalSelections: Number(
-          row.total_selections,
-        ),
+        totalSelections,
+        settledSelections,
+        pendingSelections: totalSelections - settledSelections,
         hits,
         misses,
         hitRate: percentage(
           hits,
-          hits + misses,
+          settledSelections,
         ),
       };
     }),
 
     markets: marketRows.map((row) => {
+      const totalSelections = Number(row.total_selections);
       const hits = Number(row.hits);
       const misses = Number(row.misses);
+      const settledSelections = hits + misses;
 
       return {
         marketName: row.market_name,
-        totalSelections: Number(
-          row.total_selections,
-        ),
+        totalSelections,
+        settledSelections,
+        pendingSelections: totalSelections - settledSelections,
         hits,
         misses,
         hitRate: percentage(
           hits,
-          hits + misses,
+          settledSelections,
         ),
       };
     }),
